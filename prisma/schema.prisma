@@ -1,0 +1,140 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// NextAuth necessary models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts     Account[]
+  sessions     Session[]
+  meetings     Meeting[]
+  subscription Subscription?
+}
+
+model Subscription {
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  plan             PlanType  @default(FREE)
+  status           String    @default("active")
+  stripeId         String?
+  currentPeriodEnd DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum PlanType {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+model Meeting {
+  id        String        @id @default(cuid())
+  title     String
+  date      DateTime      @default(now())
+  duration  Int? // duration in seconds
+  status    MeetingStatus @default(PROCESSING)
+  userId    String
+  createdAt DateTime      @default(now())
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  audioFile   AudioFile?
+  transcript  Transcript?
+  minutes     Minutes?
+  speakers    Speaker[]
+  actionItems ActionItem[]
+}
+
+enum MeetingStatus {
+  UPLOADING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model AudioFile {
+  id        String @id @default(cuid())
+  meetingId String @unique
+  url       String
+  format    String
+  size      Int // size in bytes
+
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+}
+
+model Transcript {
+  id        String @id @default(cuid())
+  meetingId String @unique
+  content   String @db.Text // JSON or raw text representation
+
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+}
+
+model Speaker {
+  id        String @id @default(cuid())
+  meetingId String
+  name      String
+  label     String // e.g., "Speaker 1"
+
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+}
+
+model Minutes {
+  id        String  @id @default(cuid())
+  meetingId String  @unique
+  summary   String  @db.Text
+  agenda    String? @db.Text
+  decisions String? @db.Text
+
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+}
+
+model ActionItem {
+  id        String    @id @default(cuid())
+  meetingId String
+  task      String
+  assignee  String?
+  deadline  DateTime?
+  status    String    @default("pending")
+
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+}
