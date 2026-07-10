@@ -4,7 +4,7 @@ import GoogleProvider from "next-auth/providers/google";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
 
-const handler = NextAuth({
+const { handlers: { GET, POST }, auth } = NextAuth({
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "",
@@ -22,7 +22,7 @@ const handler = NextAuth({
         }
 
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email }
+          where: { email: credentials.email as string }
         });
 
         if (!user || !user.password) {
@@ -30,7 +30,7 @@ const handler = NextAuth({
         }
 
         const isPasswordValid = await bcrypt.compare(
-          credentials.password,
+          credentials.password as string,
           user.password
         );
 
@@ -68,4 +68,4 @@ const handler = NextAuth({
   }
 });
 
-export { handler as GET, handler as POST };
+export { GET, POST };
