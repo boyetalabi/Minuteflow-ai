@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Mic, Github, Mail, ArrowRight, Loader2 } from 'lucide-react';
+import { Mic, Mail, ArrowRight, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function LoginPage() {
